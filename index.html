@@ -296,7 +296,7 @@ h3 { font-family: var(--display); font-weight: 800; font-size: 26px; text-transf
   <div class="inner">
     <div class="cover">
       <div class="cover-text">
-        <p class="label live">Live club visuals · offer</p>
+        <p class="label live">Live club visuals · handmade · offer</p>
         <h1 class="display cover-title">Rekordbox<span>Link</span></h1>
         <p class="lede">Audio-reactive visualizers that move with the music on your floor. Every kick, snare, build-up and drop, live, on your screens.</p>
         <div class="byline"><span class="label" style="color:var(--white)">Antoni Marek</span><span class="label">Visual developer · Gdańsk</span><span class="label">November 2026</span></div>
@@ -355,8 +355,8 @@ h3 { font-family: var(--display); font-weight: 800; font-size: 26px; text-transf
 <section class="slide" data-name="Visualizers" id="gallery-slide">
   <div class="inner" style="gap:24px">
     <div class="gal-head">
-      <div style="display:flex;flex-direction:column;gap:14px"><p class="label">Samples · new ones made to order</p><h2 class="display">Visualizers</h2></div>
-      <p class="small" style="max-width:31em">A few samples of what is possible. I can always make more, including visualizers built for one event. Each one hears the bass, kick, snare, hi-hats and the build-up to the drop, and answers in its own way. One key switches between them during the night. The Song DNA ones were each made for a single song: that is what a visualizer for your event looks like. <span style="color:var(--white)">Open one to watch it with sound.</span></p>
+      <div style="display:flex;flex-direction:column;gap:14px"><p class="label">Handmade samples · new ones made to order</p><h2 class="display">Visualizers</h2></div>
+      <p class="small" style="max-width:31em"><span style="color:var(--white)">Every visualizer shown here is handmade:</span> I designed and coded each one myself. They are samples of what is possible, and I can always make more, including visualizers built for one event. Each one hears the bass, kick, snare, hi-hats and the build-up to the drop, and answers in its own way. One key switches between them during the night. The Song DNA ones were each made for a single song: that is what a visualizer for your event looks like. <span style="color:var(--white)">Open one to watch it with sound.</span></p>
     </div>
     <div class="wall" id="wall"></div>
   </div>
@@ -369,7 +369,7 @@ h3 { font-family: var(--display); font-weight: 800; font-size: 26px; text-transf
     <div class="genre-grid">
       <div class="genre-film">
         <button class="tile genre" type="button" id="genre-tile" data-vis="8" aria-label="Play 808 Chrome with MITRO, 3lifestyle">
-          <img src="media/vis/chrome.jpg" alt="808 Chrome: a liquid chrome blob lit by a white top light and a magenta softbox in a dark room" width="1280" height="720">
+          <img src="media/vis/chrome.jpg" alt="808 Chrome: a liquid chrome blob under the words DJ NAME in 3D chrome, lit by a white top light and a magenta softbox" width="1280" height="720">
           <video muted loop playsinline preload="none" src="media/vis/chrome.mp4"></video>
           <span class="tag">Genre</span>
           <span class="cap"><span class="key">9</span><span class="nm">808 Chrome</span></span>
@@ -388,6 +388,7 @@ h3 { font-family: var(--display); font-weight: 800; font-size: 26px; text-transf
           <div class="map-row"><span class="snd">Half-time groove</span><span class="arr">→</span><span class="pic">Slow, heavy camera: one sway per bar</span></div>
           <div class="map-row"><span class="snd">Claps on the backbeat</span><span class="arr">→</span><span class="pic">One black-and-white strobe frame per clap, never random flicker</span></div>
           <div class="map-row"><span class="snd">Hi-hat rolls</span><span class="arr">→</span><span class="pic">Time-slice stutter</span></div>
+          <div class="map-row"><span class="snd">An artist's night</span><span class="arr">→</span><span class="pic">The DJ's name in 3D chrome, in the same reflections, spinning on the drop</span></div>
           <div class="map-row"><span class="snd">Dark rooms, one top light, magenta, chrome</span><span class="arr">→</span><span class="pic">Lit like that room: a hard top light and a magenta softbox in the reflections</span></div>
         </div>
         <p class="fineprint">Track: MITRO, “3lifestyle” (2026), produced by Vitaliy Koshin. The numbers on the left are measured from it. The same method works for your resident's sound or a headliner's.</p>
@@ -437,6 +438,7 @@ h3 { font-family: var(--display); font-weight: 800; font-size: 26px; text-transf
     <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
       <video id="lb-video" controls playsinline preload="none" controlsList="nodownload noplaybackrate" disablepictureinpicture></video>
       <p class="label" id="lb-audio"></p>
+      <p class="label" style="color:var(--white)">Handmade · designed and coded by Antoni Marek</p>
     </div>
     <div class="lb-side">
       <p class="label live" id="lb-kicker"></p>
@@ -702,8 +704,8 @@ h3 { font-family: var(--display); font-weight: 800; font-size: 26px; text-transf
       line: "A ceiling of storm pouches lit from below by the setting sun.",
       hears: [["Bass", "The pouches swell"], ["Kick", "A swelling wave crosses the sky"], ["Snare", "Lightning inside a few pouches"], ["Build-up", "Gold turns to magenta"], ["Drop", "The whole sky flashes"]] },
     { id: "chrome", name: "808 Chrome", tag: "Genre", genre: true, alt: "A liquid chrome blob lit by a white top light and a magenta softbox",
-      line: "Made for dark melodic trap: liquid chrome that the 808 owns.", music: "MITRO – 3lifestyle (the reference track)",
-      hears: [["808", "The chrome swells on every note, ripples follow its pitch"], ["Clap", "A black-and-white strobe frame"], ["Hi-hats", "Rolls stutter the picture"], ["Drop", "The blob splits into droplets"]] },
+      line: "Made for dark melodic trap: liquid chrome that the 808 owns, with the DJ's name in 3D chrome above it.", music: "MITRO – 3lifestyle (the reference track)",
+      hears: [["808", "The chrome swells on every note, ripples follow its pitch"], ["Name", "The DJ's name sways half-time and ripples with the 808"], ["Clap", "A black-and-white strobe frame"], ["Hi-hats", "Rolls stutter the picture"], ["Drop", "The blob splits into droplets, the name spins once"]] },
     { id: "venus", music: "Grimes – Venus Fly (the song it was made for)", name: "Venus Fly Stage", tag: "Song DNA", dna: true,
       alt: "A glowing green glass crystal inside a dome of light rings, over a polar floor",
       line: "Made for one song by my Song DNA engine: it analysed Venus Fly and chose glass crystal turning into lattice, a dome of light and this palette. Live, it follows whatever plays.",
