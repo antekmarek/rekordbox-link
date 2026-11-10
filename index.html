@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Audio-reactive club visuals by Antoni Marek: visualizers that move with the music on your floor.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Rekordbox Link">
+<meta property="og:description" content="Audio-reactive club visuals by Antoni Marek: visualizers that move with the music on your floor.">
+<meta property="og:url" content="https://antekmarek.github.io/rekordbox-link/">
+<meta property="og:image" content="https://antekmarek.github.io/rekordbox-link/media/stills/poster.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<title>Rekordbox Link</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;800;900&family=Hanken+Grotesk:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a dark club booth. One slide at a time on a black floor, a thin cue line on the left as the slide
+   index (like a DJ's waveform position marker), and the single neon accent only where something is live. */
+:root {
+  --floor: #050607;         /* black, a touch cool */
+  --panel: #0d1012;
+  --line: #22282b;
+  --dim: #7f888d;           /* secondary text */
+  --white: #eef1f2;
+  --neon: #00f2ff;          /* the app's own accent */
+  --display: "Big Shoulders Display", "Arial Narrow", Arial, sans-serif;
+  --body: "Hanken Grotesk", "Segoe UI", Arial, sans-serif;
+  --mono: "JetBrains Mono", Consolas, ui-monospace, monospace;
+  --rail: 52px;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--floor);
+  color: var(--white);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.55;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--neon); color: var(--floor); }
+
+/* ---------- type ---------- */
+.display { font-family: var(--display); font-weight: 900; text-transform: uppercase; line-height: .88; letter-spacing: .005em; margin: 0; text-wrap: balance; }
+.label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .16em; color: var(--dim); margin: 0; }
+.label.live { color: var(--neon); }
+.lede { font-size: clamp(17px, 1.5vw, 22px); font-weight: 300; line-height: 1.45; max-width: 30em; margin: 0; text-wrap: pretty; }
+.small { font-size: 15px; color: var(--dim); max-width: 36em; margin: 0; }
+h2.display { font-size: clamp(44px, 6.4vw, 110px); }
+h3 { font-family: var(--display); font-weight: 800; font-size: 26px; text-transform: uppercase; letter-spacing: .02em; line-height: 1; margin: 0; }
+
+/* ---------- deck frame ---------- */
+.deck { position: fixed; inset: 0; }
+.slide {
+  position: absolute; inset: 0;
+  overflow-y: auto; overflow-x: hidden;
+  padding-top: max(84px, calc(env(safe-area-inset-top, 0px) + 72px));
+  padding-bottom: max(80px, calc(env(safe-area-inset-bottom, 0px) + 68px));
+  padding-left: max(calc(var(--rail) + 40px), env(safe-area-inset-left, 0px));
+  padding-right: max(48px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column;
+  opacity: 0; visibility: hidden;
+  transition: opacity .5s ease, visibility 0s .5s;
+}
+.slide.on { opacity: 1; visibility: visible; transition-delay: 0s; z-index: 2; }
+.inner { width: 100%; max-width: 1500px; margin: auto; display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+
+/* ---------- chrome ---------- */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding-top: max(24px, calc(env(safe-area-inset-top, 0px) + 12px));
+  padding-left: max(calc(var(--rail) + 40px), env(safe-area-inset-left, 0px));
+  padding-right: max(48px, env(safe-area-inset-right, 0px));
+  pointer-events: none;
+}
+.topbar > * { pointer-events: auto; }
+.wordmark { font-family: var(--display); font-weight: 800; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; }
+.wordmark i { font-style: normal; color: var(--neon); }
+.btn {
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .14em;
+  background: transparent; border: 1px solid var(--line); color: var(--white);
+  padding: 9px 13px; cursor: pointer; border-radius: 0; line-height: 1;
+}
+.btn:hover { border-color: var(--white); }
+.btn:focus-visible, .chap:focus-visible, .cue:focus-visible, .vbtn:focus-visible, .scrub:focus-visible { outline: 1px solid var(--neon); outline-offset: 3px; }
+.rail {
+  position: fixed; z-index: 20; left: 0; top: 0; bottom: 0; width: var(--rail);
+  padding-left: env(safe-area-inset-left, 0px);
+  border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; justify-content: center; gap: 2px;
+}
+.cue { appearance: none; background: none; border: 0; padding: 7px 0; cursor: pointer; display: flex; justify-content: flex-end; }
+.cue i { display: block; height: 1px; width: 14px; background: var(--dim); transition: width .25s, background .25s; }
+.cue:hover i { width: 22px; background: var(--white); }
+.cue.on i { width: 34px; height: 2px; background: var(--neon); }
+.rail .count { position: absolute; left: 0; right: 0; bottom: max(26px, calc(env(safe-area-inset-bottom, 0px) + 14px)); text-align: center; font-family: var(--mono); font-size: 10px; letter-spacing: .06em; line-height: 1.6; }
+.rail .count span { display: block; color: var(--dim); }
+.pager { position: fixed; z-index: 20; right: max(48px, env(safe-area-inset-right, 0px)); bottom: max(24px, calc(env(safe-area-inset-bottom, 0px) + 12px)); display: flex; gap: 8px; }
+.hint { position: fixed; z-index: 20; left: calc(var(--rail) + 40px); bottom: max(32px, calc(env(safe-area-inset-bottom, 0px) + 20px)); }
+.mcount { display: none; }
+
+/* ---------- 1 cover ---------- */
+.cover { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+.cover-title { font-size: clamp(64px, min(10.5vw, 19vh), 210px); }
+.cover-title span { display: block; color: transparent; -webkit-text-stroke: 1.5px var(--white); }
+.cover-text { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
+.still { position: relative; margin: 0; min-width: 0; }
+.still img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; background: var(--panel); }
+.still figcaption { margin-top: 10px; }
+.byline { display: flex; gap: 28px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 16px; }
+
+/* ---------- 2 film ---------- */
+.film { display: flex; justify-content: center; }
+.filmbox { width: min(100%, calc((100vh - 290px) * 16 / 9)); min-width: 0; }
+.player { position: relative; background: #000; width: 100%; min-width: 0; }
+.player video { display: block; width: 100%; aspect-ratio: 16 / 9; max-width: 100%; background: #000; }
+.bigplay {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  background: rgba(5, 6, 7, .55); border: 0; color: var(--white); cursor: pointer; width: 100%;
+}
+.bigplay .ring { width: 86px; height: 86px; border: 1.5px solid var(--neon); border-radius: 50%; display: grid; place-items: center; }
+.bigplay .ring::after { content: ""; border-style: solid; border-width: 14px 0 14px 23px; border-color: transparent transparent transparent var(--white); margin-left: 6px; }
+.bigplay:hover .ring { background: rgba(0, 242, 255, .1); }
+.controls { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto; gap: 14px; align-items: center; padding: 12px 0 0; }
+.vbtn { background: none; border: 1px solid var(--line); color: var(--white); width: 40px; height: 34px; display: grid; place-items: center; cursor: pointer; padding: 0; }
+.vbtn:hover { border-color: var(--white); }
+.vbtn svg { width: 16px; height: 16px; fill: currentColor; }
+.time { font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; color: var(--white); white-space: nowrap; }
+.time span { color: var(--dim); }
+.track { position: relative; height: 34px; display: flex; align-items: center; min-width: 0; }
+.track .bg, .track .buf, .track .fill { position: absolute; left: 0; height: 2px; top: 16px; pointer-events: none; }
+.track .bg { right: 0; background: var(--line); }
+.track .buf { background: #4a5257; width: 0; }
+.track .fill { background: var(--neon); width: 0; }
+.track .tick { position: absolute; top: 11px; width: 1px; height: 12px; background: var(--dim); pointer-events: none; }
+.scrub { -webkit-appearance: none; appearance: none; width: 100%; height: 34px; background: transparent; margin: 0; position: relative; cursor: pointer; }
+.scrub::-webkit-slider-runnable-track { height: 34px; background: transparent; }
+.scrub::-moz-range-track { height: 34px; background: transparent; }
+.scrub::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--white); margin-top: 11px; border: 0; }
+.scrub::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--white); border: 0; }
+.status { min-height: 18px; margin-top: 8px; }
+.chapters { display: flex; flex-direction: column; min-width: 0; border-top: 1px solid var(--line); }
+.chap {
+  display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; align-items: baseline;
+  background: none; border: 0; border-bottom: 1px solid var(--line); color: var(--dim);
+  padding: 10px 0; text-align: left; cursor: pointer; font-family: var(--body); font-size: 14px;
+}
+.chap b { font-family: var(--mono); font-weight: 400; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--dim); }
+.chap:hover { color: var(--white); }
+.chap.now { color: var(--white); }
+.chap.now b { color: var(--neon); }
+.resume { align-self: flex-start; display: inline-flex; gap: 10px; align-items: center; }
+.resume[hidden] { display: none !important; }
+
+/* ---------- 3 how ---------- */
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line); }
+.step { display: flex; flex-direction: column; gap: 14px; padding: 26px 32px 6px 0; min-width: 0; }
+.step + .step { padding-left: 32px; border-left: 1px solid var(--line); }
+.step p { margin: 0; color: var(--dim); font-size: 16px; }
+.step .big { font-family: var(--display); font-weight: 500; font-size: clamp(54px, 6vw, 92px); line-height: .9; color: var(--white); }
+.step.live .big { color: var(--neon); }
+.statement { font-family: var(--display); font-weight: 500; font-size: clamp(30px, 3.6vw, 56px); line-height: 1.02; text-transform: uppercase; max-width: 22em; margin: 0; text-wrap: balance; }
+.statement em { font-style: normal; color: var(--neon); }
+
+/* ---------- 4 visualizers: a 3 x 3 wall of screens, the number is the key that switches to it in the app ---------- */
+.gal-head { display: flex; justify-content: space-between; align-items: end; gap: 24px; flex-wrap: wrap; }
+.wall { width: min(100%, calc((100vh - 300px) * 64 / 27)); margin: 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tile {
+  position: relative; display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; padding: 0; margin: 0;
+  background: var(--panel); border: 1px solid var(--line); cursor: pointer; overflow: hidden; color: var(--white); text-align: left;
+}
+.tile img, .tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.tile video { opacity: 0; transition: opacity .25s; }
+.tile.playing video { opacity: 1; }
+.tile .cap {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 12px 9px;
+  background: linear-gradient(to top, rgba(5, 6, 7, .88), rgba(5, 6, 7, 0));
+  display: flex; align-items: baseline; gap: 10px; min-width: 0;
+}
+.tile .key { font-family: var(--mono); font-size: 11px; color: var(--dim); border: 1px solid #3a4246; padding: 1px 5px; line-height: 1.3; }
+.tile .nm { font-family: var(--display); font-weight: 800; font-size: clamp(15px, 1.35vw, 21px); text-transform: uppercase; letter-spacing: .03em; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.tile .tag { position: absolute; top: 9px; right: 10px; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: var(--white); background: rgba(5, 6, 7, .6); padding: 3px 6px; }
+.tile.genre .tag, .tile.dna .tag { color: var(--neon); }
+.tile:hover, .tile:focus-visible { border-color: var(--white); outline: none; }
+.tile:hover .key, .tile:focus-visible .key { color: var(--neon); border-color: var(--neon); }
+
+/* lightbox: one visualizer with sound */
+.lb { position: fixed; inset: 0; z-index: 50; background: rgba(5, 6, 7, .96); display: flex; align-items: center; justify-content: center;
+  padding: max(64px, calc(env(safe-area-inset-top, 0px) + 56px)) max(16px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.lb[hidden] { display: none; }
+.lb-in { width: min(1500px, 100%); display: grid; grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr); gap: 36px; align-items: start; max-height: 100%; overflow-y: auto; }
+.lb video { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; background: #000; }
+.lb-side { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.lb-side h3 { font-size: clamp(30px, 3vw, 46px); }
+.lb-side p { margin: 0; color: var(--dim); font-size: 15px; }
+.hears { display: grid; grid-template-columns: 74px minmax(0, 1fr); margin: 0; border-top: 1px solid var(--line); }
+.hears dt, .hears dd { margin: 0; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.hears dt { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--neon); padding-top: 11px; }
+.hears dd { color: var(--white); }
+.lb-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.lb-x { position: absolute; top: max(18px, calc(env(safe-area-inset-top, 0px) + 10px)); right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* ---------- 5 genre case study ---------- */
+.genre-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 44px; align-items: start; }
+.genre-film { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.genre-film .tile { cursor: pointer; }
+.figs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.fig { padding: 14px 14px 12px 0; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fig + .fig { padding-left: 14px; border-left: 1px solid var(--line); }
+.fig b { font-family: var(--display); font-weight: 500; font-size: clamp(30px, 2.8vw, 44px); line-height: .95; font-variant-numeric: tabular-nums; }
+.fig span { font-size: 13px; color: var(--dim); line-height: 1.35; }
+.map { display: flex; flex-direction: column; min-width: 0; }
+.map-row { display: grid; grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1.15fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.map-row:first-child { border-top: 1px solid var(--line); }
+.map-row .snd { color: var(--dim); font-size: 14px; }
+.map-row .arr { color: var(--neon); font-family: var(--mono); font-size: 13px; }
+.map-row .pic { color: var(--white); font-size: 15px; }
+.fineprint { font-size: 13px; color: var(--dim); margin: 0; max-width: 46em; }
+
+/* ---------- 5 offer ---------- */
+.offer { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line); }
+.pack { display: flex; flex-direction: column; gap: 14px; padding: 26px 32px 8px 0; min-width: 0; }
+.pack + .pack { padding-left: 32px; border-left: 1px solid var(--line); }
+.pack.key h3 { color: var(--neon); }
+.pack ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.pack li { color: var(--dim); font-size: 15px; padding-left: 18px; position: relative; }
+.pack li::before { content: ""; position: absolute; left: 0; top: .72em; width: 8px; height: 1px; background: var(--dim); }
+.pack.key li::before { background: var(--neon); }
+.terms { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; }
+.terms div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.terms p { margin: 0; font-size: 15px; }
+
+/* ---------- 6 contact ---------- */
+.contact-name { font-size: clamp(60px, 9vw, 160px); }
+.contact-name span { color: transparent; -webkit-text-stroke: 1.5px var(--white); }
+.links { display: flex; gap: 40px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 18px; }
+.links div { display: flex; flex-direction: column; gap: 6px; }
+.links a { color: var(--white); text-decoration: none; font-size: 20px; border-bottom: 1px solid var(--neon); align-self: flex-start; }
+.links a:hover { color: var(--neon); }
+.links .val { font-size: 20px; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1100px) {
+  .film { grid-template-columns: minmax(0, 1fr); }
+  .player { width: 100%; }
+  .chapters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; }
+}
+@media (max-width: 860px) {
+  :root { --rail: 0px; }
+  .rail, .hint { display: none; }
+  .mcount { display: inline; }
+  .slide { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 84px)); }
+  .topbar { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .pager { right: max(16px, env(safe-area-inset-right, 0px)); }
+  .cover, .steps, .offer, .terms, .genre-grid, .lb-in { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .wall { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .figs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fig:nth-child(3) { padding-left: 0; border-left: 0; }
+  .fig:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .step + .step, .pack + .pack { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
+  .step, .pack { padding-right: 0; }
+  .inner { margin: 0 auto auto; }
+  .controls { grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 10px; }
+  .controls .time { grid-column: 1 / -1; order: 9; }
+  .chapters { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 480px) { .wordmark { display: none; } .wall { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .slide, .cue i { transition: none; } }
+</style>
+
+</head>
+<body>
+<div class="topbar">
+  <span class="wordmark">Rekordbox <i>Link</i></span>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span class="label mcount" id="mcount">01 / 06</span>
+    <button class="btn" id="fs" type="button" title="Fullscreen (F)">Fullscreen</button>
+  </div>
+</div>
+<nav class="rail" id="rail" aria-label="Slides"><div class="count" id="count"></div></nav>
+<div class="pager">
+  <button class="btn" id="prev" type="button" aria-label="Previous slide">←</button>
+  <button class="btn" id="next" type="button" aria-label="Next slide">→</button>
+</div>
+<p class="label hint">← → slides · space play / pause · F fullscreen</p>
+
+<main class="deck" id="deck">
+
+<!-- 1 cover -->
+<section class="slide" data-name="Cover">
+  <div class="inner">
+    <div class="cover">
+      <div class="cover-text">
+        <p class="label live">Live club visuals · offer</p>
+        <h1 class="display cover-title">Rekordbox<span>Link</span></h1>
+        <p class="lede">Audio-reactive visualizers that move with the music on your floor. Every kick, snare, build-up and drop, live, on your screens.</p>
+        <div class="byline"><span class="label" style="color:var(--white)">Antoni Marek</span><span class="label">Visual developer · Gdańsk</span><span class="label">November 2026</span></div>
+      </div>
+      <figure class="still">
+        <img src="media/stills/poster.jpg" alt="The Particle Sphere visual: a white particle sphere with a thin cyan ring on black" width="1280" height="720">
+        <figcaption class="label">Still from the demo film · Particle Sphere</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- 2 film -->
+<section class="slide" data-name="Demo film" id="film-slide">
+  <div class="inner" style="gap:22px">
+    <div style="display:flex;justify-content:space-between;align-items:end;gap:24px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:12px"><p class="label live">The demo · 2 min 11 s · sound on</p><h2 class="display">See it run</h2></div>
+      <button class="btn resume" id="resume" type="button" hidden>Resume at <span id="resume-t">0:00</span></button>
+    </div>
+    <div class="film">
+      <div class="filmbox">
+        <div class="player" id="player">
+          <video id="video" playsinline preload="metadata" poster="media/stills/poster.jpg"></video>
+          <button class="bigplay" id="bigplay" type="button" aria-label="Play the demo with sound"><span class="ring"></span><span class="label" style="color:var(--white)">Play with sound</span></button>
+        </div>
+        <div class="controls" id="controls">
+          <button class="vbtn" id="pp" type="button" aria-label="Play"><svg viewBox="0 0 16 16" id="pp-icon"><path d="M4 2l10 6-10 6z"/></svg></button>
+          <span class="time" id="time">0:00 <span>/ 2:11</span></span>
+          <div class="track">
+            <div class="bg"></div><div class="buf" id="buf"></div><div class="fill" id="fill"></div>
+            <input class="scrub" id="scrub" type="range" min="0" max="131" step="0.1" value="0" aria-label="Position in the demo film">
+          </div>
+          <button class="vbtn" id="mute" type="button" aria-label="Mute"><svg viewBox="0 0 16 16" id="mute-icon"><path d="M2 6h3l4-3v10l-4-3H2z"/><path d="M11 5.5a3.5 3.5 0 010 5" stroke="currentColor" fill="none" stroke-width="1.4"/></svg></button>
+          <button class="vbtn" id="vfs" type="button" aria-label="Film fullscreen"><svg viewBox="0 0 16 16"><path d="M1 1h5v1.5H2.5V6H1zM10 1h5v5h-1.5V2.5H10zM1 10h1.5v3.5H6V15H1zM13.5 10H15v5h-5v-1.5h3.5z"/></svg></button>
+        </div>
+        <p class="label status" id="status"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 how -->
+<section class="slide" data-name="How it works">
+  <div class="inner" style="gap:44px">
+    <div style="display:flex;flex-direction:column;gap:14px"><p class="label">How it works</p><h2 class="display">Music in, light out</h2></div>
+    <div class="steps">
+      <div class="step"><span class="big">01</span><h3>The DJ plays</h3><p>rekordbox, Spotify, or the mixer's output plugged into the laptop. Nothing changes in the booth.</p></div>
+      <div class="step live"><span class="big">02</span><h3>It listens</h3><p>The software hears the bass, the kick, the snare and the hi-hats, finds the tempo, and feels a build-up and the drop coming.</p></div>
+      <div class="step"><span class="big">03</span><h3>The screen answers</h3><p>A projector or LED wall shows the visualizer in real time, 60 frames a second, with no delay you can see.</p></div>
+    </div>
+    <p class="statement">No timeline to program, no VJ needed every night. <em>The music drives it.</em></p>
+  </div>
+</section>
+
+<!-- 4 visualizers -->
+<section class="slide" data-name="Visualizers" id="gallery-slide">
+  <div class="inner" style="gap:24px">
+    <div class="gal-head">
+      <div style="display:flex;flex-direction:column;gap:14px"><p class="label">Samples · new ones made to order</p><h2 class="display">Visualizers</h2></div>
+      <p class="small" style="max-width:31em">A few samples of what is possible. I can always make more, including visualizers built for one event. Each one hears the bass, kick, snare, hi-hats and the build-up to the drop, and answers in its own way. One key switches between them during the night. The Song DNA ones were each made for a single song: that is what a visualizer for your event looks like. <span style="color:var(--white)">Open one to watch it with sound.</span></p>
+    </div>
+    <div class="wall" id="wall"></div>
+  </div>
+</section>
+
+<!-- 5 genre -->
+<section class="slide" data-name="Built for the genre" id="genre-slide">
+  <div class="inner" style="gap:30px">
+    <div style="display:flex;flex-direction:column;gap:14px"><p class="label live">Case study · dark melodic trap</p><h2 class="display">Built for the genre</h2></div>
+    <div class="genre-grid">
+      <div class="genre-film">
+        <button class="tile genre" type="button" id="genre-tile" data-vis="8" aria-label="Play 808 Chrome with MITRO, 3lifestyle">
+          <img src="media/vis/chrome.jpg" alt="808 Chrome: a liquid chrome blob lit by a white top light and a magenta softbox in a dark room" width="1280" height="720">
+          <video muted loop playsinline preload="none" src="media/vis/chrome.mp4"></video>
+          <span class="tag">Genre</span>
+          <span class="cap"><span class="key">9</span><span class="nm">808 Chrome</span></span>
+        </button>
+        <div class="figs">
+          <div class="fig"><b>143.6</b><span>BPM, felt half-time at 72</span></div>
+          <div class="fig"><b>87%</b><span>of the energy below 150 Hz</span></div>
+          <div class="fig"><b>32–59</b><span>Hz: where the 808 glides</span></div>
+          <div class="fig"><b>61%</b><span>of the track has the 808 sounding</span></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+        <p class="lede" style="font-size:clamp(16px,1.3vw,19px)">I measured MITRO’s “3lifestyle” and its video, then designed a visualizer around what the sound and the room actually do. The clip plays that track.</p>
+        <div class="map">
+          <div class="map-row"><span class="snd">The 808 carries the track</span><span class="arr">→</span><span class="pic">Liquid chrome that swells on every 808 note. Ripples tighten as its pitch rises.</span></div>
+          <div class="map-row"><span class="snd">Half-time groove</span><span class="arr">→</span><span class="pic">Slow, heavy camera: one sway per bar</span></div>
+          <div class="map-row"><span class="snd">Claps on the backbeat</span><span class="arr">→</span><span class="pic">One black-and-white strobe frame per clap, never random flicker</span></div>
+          <div class="map-row"><span class="snd">Hi-hat rolls</span><span class="arr">→</span><span class="pic">Time-slice stutter</span></div>
+          <div class="map-row"><span class="snd">Dark rooms, one top light, magenta, chrome</span><span class="arr">→</span><span class="pic">Lit like that room: a hard top light and a magenta softbox in the reflections</span></div>
+        </div>
+        <p class="fineprint">Track: MITRO, “3lifestyle” (2026), produced by Vitaliy Koshin. The numbers on the left are measured from it. The same method works for your resident's sound or a headliner's.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 offer -->
+<section class="slide" data-name="Offer">
+  <div class="inner" style="gap:40px">
+    <div style="display:flex;flex-direction:column;gap:14px"><p class="label live">For your club</p><h2 class="display">What I offer</h2></div>
+    <div class="offer">
+      <div class="pack"><span class="label">Option 1</span><h3>Install</h3>
+        <ul><li>The software with the visualizers shown here, and new ones as they come</li><li>Your logo or pictures in Image Waves and Scan Portrait</li><li>Set up on your venue PC and screens, tuned to your sound system on a test night</li></ul></div>
+      <div class="pack key"><span class="label live">Option 2 · recommended</span><h3>Your own visualizer</h3>
+        <ul><li>Everything in Install</li><li>A visualizer designed for your club: your colours, logo and footage of your space</li><li>Two rounds of changes before opening night</li></ul></div>
+      <div class="pack"><span class="label">Option 3</span><h3>Event</h3>
+        <ul><li>A visualizer made for one night or a residency</li><li>Built around the headliner's sound, like 808 Chrome</li><li>On-site support for the night</li></ul></div>
+    </div>
+    <div class="terms">
+      <div><span class="label">Hardware</span><p>A normal Windows PC and the screens you already have. No extra gear in the booth.</p></div>
+      <div><span class="label">Works with</span><p>rekordbox, Spotify, any DJ software, or a line from the mixer.</p></div>
+      <div><span class="label">Price</span><p>Quoted per project, after a short visit to the venue.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 contact -->
+<section class="slide" data-name="Contact">
+  <div class="inner" style="gap:36px">
+    <p class="label live">Next step · a test night on your floor</p>
+    <h2 class="display contact-name">Antoni<span>Marek</span></h2>
+    <p class="lede">I build visual systems that react to sound, from club visuals to interactive installations. Let's try it on your sound system.</p>
+    <div class="links">
+      <div><span class="label">Portfolio and contact</span><a href="https://antekmarek.com" target="_blank" rel="noopener">antekmarek.com</a></div>
+      <div><span class="label">Based in</span><span class="val">Gdańsk, Poland</span></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-labelledby="lb-name" hidden>
+  <button class="btn lb-x" id="lb-x" type="button">Close · Esc</button>
+  <div class="lb-in">
+    <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+      <video id="lb-video" controls playsinline preload="none" controlsList="nodownload noplaybackrate" disablepictureinpicture></video>
+      <p class="label" id="lb-audio"></p>
+    </div>
+    <div class="lb-side">
+      <p class="label live" id="lb-kicker"></p>
+      <h3 id="lb-name"></h3>
+      <p id="lb-line"></p>
+      <dl class="hears" id="lb-hears"></dl>
+      <div class="lb-nav"><button class="btn" id="lb-prev" type="button">← Previous</button><button class="btn" id="lb-next" type="button">Next →</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.20/hls.min.js"></script>
+<script>
+(function () {
+  // ---------------------------------------------------------------- deck
+  const slides = [...document.querySelectorAll(".slide")];
+  const N = slides.length;
+  const rail = document.getElementById("rail");
+  const count = document.getElementById("count");
+  const mcount = document.getElementById("mcount");
+  const pad = n => String(n).padStart(2, "0");
+  const cues = slides.map((s, i) => {
+    const b = document.createElement("button");
+    b.className = "cue"; b.type = "button";
+    b.setAttribute("aria-label", "Slide " + (i + 1) + ": " + s.dataset.name);
+    b.title = pad(i + 1) + " " + s.dataset.name;
+    b.innerHTML = "<i></i>";
+    b.addEventListener("click", () => go(i));
+    rail.insertBefore(b, count);
+    return b;
+  });
+  let cur = -1;
+  const FILM = slides.indexOf(document.getElementById("film-slide"));
+
+  function go(i, fromHash) {
+    i = Math.max(0, Math.min(N - 1, i));
+    if (i === cur) return;
+    if (cur === FILM && i !== FILM) pauseFilm();          // leaving the film keeps its position
+    cur = i;
+    slides.forEach((s, k) => {
+      const on = k === i;
+      s.classList.toggle("on", on);
+      s.setAttribute("aria-hidden", on ? "false" : "true");
+      s.inert = !on;
+    });
+    slides[i].scrollTop = 0;
+    cues.forEach((c, k) => c.classList.toggle("on", k === i));
+    count.innerHTML = pad(i + 1) + "<span>" + pad(N) + "</span>";
+    mcount.textContent = pad(i + 1) + " / " + pad(N);
+    if (i === FILM) initFilm();
+    if (!fromHash) { try { history.replaceState(null, "", "#s" + (i + 1)); } catch (e) {} }
+  }
+  document.getElementById("prev").addEventListener("click", () => go(cur - 1));
+  document.getElementById("next").addEventListener("click", () => go(cur + 1));
+
+  const fsBtn = document.getElementById("fs");
+  function toggleFs() {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen().catch(() => {});
+    } catch (e) {}
+  }
+  fsBtn.addEventListener("click", toggleFs);
+  if (!document.documentElement.requestFullscreen) fsBtn.hidden = true;
+
+  document.addEventListener("keydown", e => {
+    if (!lb.hidden) { lbKey(e); return; }
+    if (cur === GALLERY && /^[0-9]$/.test(e.key)) { openLb(e.key === "0" ? 9 : parseInt(e.key, 10) - 1); return; }   // like the app's keys
+    if (e.target.closest && e.target.closest("input")) {
+      if (e.key !== " ") return;                           // arrows move the scrubber when it has focus
+    }
+    if (e.key === " " && cur === FILM) { e.preventDefault(); togglePlay(); return; }
+    if (e.target.closest && e.target.closest("button") && (e.key === " " || e.key === "Enter")) return;
+    if (["ArrowRight", "PageDown", " "].includes(e.key)) { e.preventDefault(); go(cur + 1); }
+    else if (["ArrowLeft", "PageUp"].includes(e.key)) { e.preventDefault(); go(cur - 1); }
+    else if (e.key === "Home") go(0);
+    else if (e.key === "End") go(N - 1);
+    else if (e.key === "f" || e.key === "F") toggleFs();
+  });
+  let x0 = null, y0 = null;
+  document.addEventListener("touchstart", e => {
+    if (!lb.hidden || e.target.closest(".controls") || e.target.closest(".player")) { x0 = null; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener("touchend", e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) go(cur + (dx < 0 ? 1 : -1));
+    x0 = null;
+  }, { passive: true });
+
+  // ---------------------------------------------------------------- film
+  // Three qualities (1080p60 / 720p60 / 540p30) in one master playlist: the player measures the
+  // connection and switches between them per 6-s piece, so a slower link lowers the picture instead
+  // of stopping the film. (Playlists are .txt because the host serves no .m3u8.)
+  const SRC = "media/film/master.txt";
+  const DUR = 130.9;
+  const video = document.getElementById("video");
+  const bigplay = document.getElementById("bigplay");
+  const pp = document.getElementById("pp");
+  const ppIcon = document.getElementById("pp-icon");
+  const scrub = document.getElementById("scrub");
+  const fill = document.getElementById("fill");
+  const buf = document.getElementById("buf");
+  const timeEl = document.getElementById("time");
+  const status = document.getElementById("status");
+  const resumeBtn = document.getElementById("resume");
+  const muteBtn = document.getElementById("mute");
+  const KEY = "rbl-film-position";
+  let started = false, ready = false, hls = null, dragging = false, saved = 0;
+
+  const fmt = t => { t = Math.max(0, Math.floor(t || 0)); return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0"); };
+  const duration = () => (isFinite(video.duration) && video.duration > 0 ? video.duration : DUR);
+
+  try { saved = parseFloat(localStorage.getItem(KEY) || "0") || 0; } catch (e) { saved = 0; }
+  if (saved > 3 && saved < DUR - 3) {
+    resumeBtn.hidden = false;
+    document.getElementById("resume-t").textContent = fmt(saved);
+  }
+
+  function initFilm() {
+    if (ready) return;
+    ready = true;
+    // hls.js everywhere it runs: desktop browsers, Android, and iPhone / iPad on iOS 17.1+ (Managed Media
+    // Source). The playlist is served as .txt (the host serves no .m3u8), which hls.js reads by content.
+    video.disableRemotePlayback = true;                   // required by Apple's Managed Media Source
+    if (window.Hls && Hls.isSupported()) startHls();
+    else fallbackNative();
+  }
+  function startHls() {
+    hls = new Hls({
+      enableWorker: false,
+      startLevel: -1,                       // pick the first quality from a bandwidth estimate
+      abrEwmaDefaultEstimate: 3000000,      // first guess 3 Mbit/s: starts on 720p, moves up when it can
+      abrBandWidthFactor: 0.8,              // stay on a quality only with 20 % bandwidth to spare
+      abrBandWidthUpFactor: 0.6,            // move up only with 40 % to spare
+      capLevelToPlayerSize: true,           // a phone never downloads 1080p it cannot show
+      maxBufferLength: 60,                  // read up to a minute ahead
+      maxMaxBufferLength: 120,
+      startPosition: -1
+    });
+    hls.on(Hls.Events.ERROR, (ev, data) => {
+      if (!data.fatal) return;
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) { status.textContent = "Connection lost, retrying..."; hls.startLoad(); }
+      else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) { hls.recoverMediaError(); }
+      else { fallbackNative(); }
+    });
+    hls.loadSource(SRC);
+    hls.attachMedia(video);
+  }
+  function fallbackNative() {
+    if (hls) { try { hls.destroy(); } catch (e) {} hls = null; }
+    video.src = SRC;                                       // last try: browsers with built-in streaming
+    video.addEventListener("error", () => {
+      status.textContent = "This browser can't play the film. Open the page in a current Chrome, Edge, Firefox or Safari (iPhone: iOS 17.1 or newer).";
+    }, { once: true });
+  }
+
+  function play() {
+    initFilm();
+    video.muted = false;
+    const p = video.play();
+    if (p && p.catch) p.catch(() => { status.textContent = "Tap play to start."; });
+  }
+  function pauseFilm() { if (!video.paused) video.pause(); }
+  function togglePlay() { if (video.paused) play(); else video.pause(); }
+  function seek(t, andPlay) {
+    initFilm();
+    t = Math.max(0, Math.min(duration() - 0.2, t));
+    const apply = () => { try { video.currentTime = t; } catch (e) {} };
+    if (video.readyState >= 1) apply(); else video.addEventListener("loadedmetadata", apply, { once: true });
+    showTime(t);
+    if (andPlay) play();
+  }
+
+  bigplay.addEventListener("click", () => { if (saved > 3 && !started) seek(saved, true); else play(); });
+  resumeBtn.addEventListener("click", () => { go(FILM); seek(saved, true); });
+  pp.addEventListener("click", togglePlay);
+  video.addEventListener("click", togglePlay);
+  muteBtn.addEventListener("click", () => {
+    video.muted = !video.muted;
+    muteBtn.setAttribute("aria-label", video.muted ? "Unmute" : "Mute");
+    muteBtn.style.color = video.muted ? "var(--dim)" : "var(--white)";
+  });
+  document.getElementById("vfs").addEventListener("click", () => {
+    const el = document.getElementById("player");
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+      else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();   // iPhone
+    } catch (e) {}
+  });
+
+  scrub.addEventListener("input", () => { dragging = true; showTime(parseFloat(scrub.value)); });
+  scrub.addEventListener("change", () => { dragging = false; seek(parseFloat(scrub.value), !video.paused || !started); });
+
+  video.addEventListener("play", () => {
+    started = true; bigplay.hidden = true; status.textContent = "";
+    ppIcon.innerHTML = '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>'; pp.setAttribute("aria-label", "Pause");
+  });
+  video.addEventListener("pause", () => {
+    ppIcon.innerHTML = '<path d="M4 2l10 6-10 6z"/>'; pp.setAttribute("aria-label", "Play");
+    savePos();
+  });
+  video.addEventListener("waiting", () => { status.textContent = "Loading..."; });
+  video.addEventListener("playing", () => { status.textContent = ""; });
+  video.addEventListener("ended", () => { try { localStorage.removeItem(KEY); } catch (e) {} resumeBtn.hidden = true; });
+  video.addEventListener("loadedmetadata", () => { scrub.max = duration().toFixed(1); });
+
+  let lastSave = 0;
+  function savePos() {
+    try { localStorage.setItem(KEY, String(video.currentTime)); } catch (e) {}
+    saved = video.currentTime;
+    if (saved > 3 && saved < duration() - 3) { resumeBtn.hidden = false; document.getElementById("resume-t").textContent = fmt(saved); }
+  }
+  video.addEventListener("timeupdate", () => {
+    if (!dragging) showTime(video.currentTime);
+    const now = Date.now();
+    if (now - lastSave > 2000) { lastSave = now; savePos(); }
+  });
+  video.addEventListener("progress", showBuffer);
+
+  function showTime(t) {
+    const d = duration();
+    if (!dragging) scrub.value = t;
+    fill.style.width = (t / d * 100) + "%";
+    timeEl.innerHTML = fmt(t) + " <span>/ " + fmt(d) + "</span>";
+  }
+  function showBuffer() {
+    const b = video.buffered, t = video.currentTime;
+    let end = 0;
+    for (let i = 0; i < b.length; i++) if (b.start(i) <= t + 0.5) end = Math.max(end, b.end(i));
+    buf.style.width = (end / duration() * 100) + "%";
+  }
+  document.addEventListener("visibilitychange", () => { if (document.hidden) savePos(); });
+
+  // ---------------------------------------------------------------- visualizers
+  // Clips: 25 s, rendered by the app itself (its --selftest feeds the track through the live engine).
+  // music: tracks from the Interactive Visualizer project, each clip starting just before the track's drop
+  const VIS = [
+    { id: "sphere", music: "Kumo 99 – Dow Bones", name: "Particle Sphere", tag: "Particles", alt: "A white particle sphere with a thin cyan ring on black",
+      line: "A quarter of a million points that breathe with the bass and burst on every kick.",
+      hears: [["Bass", "The sphere breathes in and out"], ["Kick", "The points burst outwards"], ["Snare", "The neon ring tears"], ["Drop", "A negative flash"]] },
+    { id: "veins", music: "Kumo 99 – Gomi", name: "Flow Veins", tag: "Particles", alt: "White smoke-like particle filaments on black",
+      line: "Glowing filaments that flow like smoke and gather into veins.",
+      hears: [["Bass", "The flow field widens"], ["Groove", "The flow speeds up"], ["Kick", "A patch of particles is reborn"], ["Snare", "Displacement streaks"], ["Drop", "A starburst"]] },
+    { id: "mosh", music: "Kumo 99 – Dopamine Chaser", name: "Cloud Mosh", tag: "Footage", alt: "Mountain footage broken into pixels and grain with cyan glitch blocks",
+      line: "Real footage, pixelated and datamoshed to the beat. Works with any video, your venue's own included.",
+      hears: [["Build-up", "The datamosh smears harder"], ["Kick", "Blocks of the real picture come back"], ["Snare", "Neon glitch blocks"], ["Hi-hats", "Grain and grit"], ["Drop", "The picture snaps back clean"]] },
+    { id: "totem", music: "Kumo 99 – Headplate", name: "Smoke Totem", tag: "Particles", alt: "A mirrored column of white particle smoke on black",
+      line: "A mirrored column of smoke whose outline is the live spectrum: bass at the foot, air at the top, every band as loud as it is right now.",
+      hears: [["Spectrum", "The column's silhouette"], ["Kick", "The discs at the foot burst out"], ["Snare", "A shock ring at a random height"], ["Drop", "Every band at full, an upward blast"]] },
+    { id: "waves", music: "PinkPantheress – Stateside + Zara Larsson", name: "Image Waves", tag: "Your picture", alt: "A pink flower made of thousands of 3D particles",
+      line: "Any picture becomes 3D particles that keep its colours: your logo, a flyer, a portrait.",
+      hears: [["Kick", "A ring wave runs out from the centre"], ["Bass", "The halves fold like wings"], ["Snare", "Particles scatter and spring back"], ["Drop", "The picture explodes and re-forms"]] },
+    { id: "scan", music: "Kumo 99 – Eyesore", name: "Scan Portrait", tag: "Your picture", alt: "A marble head drawn in white lines and points",
+      line: "A portrait drawn in light: a line drawing when the room is calm, a dense point cloud when it peaks.",
+      hears: [["Energy", "Lines fill into a point cloud"], ["Kick", "Scan bands slide sideways"], ["Snare", "Every point snaps to a 3D grid"], ["Drop", "The cloud blows apart, then re-forms"]] },
+    { id: "supercell", music: "Ciel – LOVE", name: "Supercell", tag: "Generated sky", alt: "A rotating storm cloud at golden hour with a lightning bolt",
+      line: "A storm-chaser time-lapse, generated live: a rotating storm at golden hour that never loops.",
+      hears: [["Snare", "A lightning bolt to the ground"], ["Kick", "A flash inside the cloud"], ["Hi-hats", "Rain"], ["Build-up", "The sun glow grows, the storm spins up"], ["Drop", "Sheet lightning"]] },
+    { id: "mammatus", music: "CA7RIEL & Paco Amoroso – Sexy Magic", name: "Mammatus", tag: "Generated sky", alt: "A ceiling of hanging mammatus cloud pouches lit orange by the sunset",
+      line: "A ceiling of storm pouches lit from below by the setting sun.",
+      hears: [["Bass", "The pouches swell"], ["Kick", "A swelling wave crosses the sky"], ["Snare", "Lightning inside a few pouches"], ["Build-up", "Gold turns to magenta"], ["Drop", "The whole sky flashes"]] },
+    { id: "chrome", name: "808 Chrome", tag: "Genre", genre: true, alt: "A liquid chrome blob lit by a white top light and a magenta softbox",
+      line: "Made for dark melodic trap: liquid chrome that the 808 owns.", music: "MITRO – 3lifestyle (the reference track)",
+      hears: [["808", "The chrome swells on every note, ripples follow its pitch"], ["Clap", "A black-and-white strobe frame"], ["Hi-hats", "Rolls stutter the picture"], ["Drop", "The blob splits into droplets"]] },
+    { id: "venus", music: "Grimes – Venus Fly (the song it was made for)", name: "Venus Fly Stage", tag: "Song DNA", dna: true,
+      alt: "A glowing green glass crystal inside a dome of light rings, over a polar floor",
+      line: "Made for one song by my Song DNA engine: it analysed Venus Fly and chose glass crystal turning into lattice, a dome of light and this palette. Live, it follows whatever plays.",
+      hears: [["Build-up", "The swarm collapses onto the form, the camera pushes in"], ["Drop", "A wide cut, the shape changes in 80 ms, the swarm is blown out"], ["Bass", "The form swells"], ["Spectrum", "The dome rings and the floor"]] },
+    { id: "forz4", music: "testpress – FORZ4 (the song it was made for)", name: "FORZ4 Stage", tag: "Song DNA", dna: true,
+      alt: "A glowing ceramic knot over a polar spectrum floor with a skyline of spectrum bars",
+      line: "Made for one song by my Song DNA engine: a ceramic knot turning into lattice over a spectrum floor, cut every few bars like a film. Live, it follows whatever plays.",
+      hears: [["Spectrum", "The skyline bars and the rings of the floor"], ["Kick", "Camera hits and particle pulses"], ["Build-up", "The camera pushes in"], ["Drop", "A wide cut and a new shape"]] },
+    { id: "steelstar", music: "Kumo 99 – Four Point Steel Star (the song it was made for)", name: "Steel Star Stage", tag: "Song DNA", dna: true,
+      alt: "A teal glass bloom with glowing scan lines and magenta particle flames",
+      line: "Made for one song by my Song DNA engine: a glass bloom with scan bands in teal and magenta, filmed in slow dollies. Live, it follows whatever plays.",
+      hears: [["Loudness", "The halo and the particle light"], ["Snare", "The swarm scatters"], ["Build-up", "The swarm clings to the form"], ["Drop", "Blown off, then it slowly re-forms"]] }
+  ];
+  const GALLERY = slides.indexOf(document.getElementById("gallery-slide"));
+  const wall = document.getElementById("wall");
+  const canHover = window.matchMedia && matchMedia("(hover: hover)").matches;
+  function preview(tile, id) {                   // desktop: the clip plays silently under the pointer
+    if (!canHover) return;
+    const vid = tile.querySelector("video");
+    const on = () => {
+      if (!vid.getAttribute("src")) vid.src = "media/vis/" + id + ".mp4";
+      tile.classList.add("playing");
+      const p = vid.play(); if (p && p.catch) p.catch(() => {});
+    };
+    const off = () => { vid.pause(); tile.classList.remove("playing"); };
+    tile.addEventListener("mouseenter", on); tile.addEventListener("mouseleave", off);
+    tile.addEventListener("focus", on); tile.addEventListener("blur", off);
+  }
+  VIS.forEach((v, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "tile" + (v.genre ? " genre" : "") + (v.dna ? " dna" : "");
+    b.setAttribute("aria-label", (i + 1) + ", " + v.name + ": play with sound");
+    b.innerHTML = '<img src="media/vis/' + v.id + '.jpg" alt="' + v.alt + '" loading="lazy" width="1280" height="720">' +
+      '<video muted loop playsinline preload="none"></video><span class="tag">' + v.tag + '</span>' +
+      '<span class="cap"><span class="key">' + (i + 1) + '</span><span class="nm">' + v.name + '</span></span>';
+    b.addEventListener("click", () => openLb(i, b));
+    preview(b, v.id);
+    wall.appendChild(b);
+  });
+  const genreTile = document.getElementById("genre-tile");
+  genreTile.addEventListener("click", () => openLb(8, genreTile));
+  preview(genreTile, "chrome");
+
+  const lb = document.getElementById("lb");
+  const lbv = document.getElementById("lb-video");
+  let lbi = -1, lbFrom = null;
+  function openLb(i, from) {
+    lbFrom = from || document.activeElement;
+    pauseFilm();
+    document.querySelectorAll(".tile video").forEach(v => v.pause());
+    lb.hidden = false;
+    showLb(i);
+    document.getElementById("lb-x").focus();
+  }
+  function showLb(i) {
+    lbi = (i + VIS.length) % VIS.length;
+    const v = VIS[lbi];
+    document.getElementById("lb-kicker").textContent = "No. " + (lbi + 1) + " · " + v.tag;
+    document.getElementById("lb-name").textContent = v.name;
+    document.getElementById("lb-line").textContent = v.line;
+    document.getElementById("lb-audio").textContent = "Music · " + v.music;
+    const dl = document.getElementById("lb-hears");
+    dl.innerHTML = "";
+    v.hears.forEach(([k, d]) => {
+      const dt = document.createElement("dt"); dt.textContent = k;
+      const dd = document.createElement("dd"); dd.textContent = d;
+      dl.append(dt, dd);
+    });
+    lbv.poster = "media/vis/" + v.id + ".jpg";
+    lbv.src = "media/vis/" + v.id + ".mp4";
+    lbv.muted = false;
+    const p = lbv.play(); if (p && p.catch) p.catch(() => {});
+  }
+  function closeLb() {
+    lbv.pause(); lbv.removeAttribute("src"); lbv.load();
+    lb.hidden = true;
+    if (lbFrom && lbFrom.focus) lbFrom.focus();
+  }
+  function lbKey(e) {
+    if (e.key === "Escape") { e.preventDefault(); closeLb(); }
+    else if (e.key === "ArrowRight" && !e.target.closest("video")) { e.preventDefault(); showLb(lbi + 1); }
+    else if (e.key === "ArrowLeft" && !e.target.closest("video")) { e.preventDefault(); showLb(lbi - 1); }
+    else if (/^[0-9]$/.test(e.key)) showLb(e.key === "0" ? 9 : parseInt(e.key, 10) - 1);
+    else if (e.key === "Tab") {                             // keep focus inside the dialog
+      const f = [...lb.querySelectorAll("button, video")];
+      const k = f.indexOf(document.activeElement);
+      if (e.shiftKey && k <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && k === f.length - 1) { e.preventDefault(); f[0].focus(); }
+    }
+  }
+  document.getElementById("lb-x").addEventListener("click", closeLb);
+  document.getElementById("lb-prev").addEventListener("click", () => showLb(lbi - 1));
+  document.getElementById("lb-next").addEventListener("click", () => showLb(lbi + 1));
+  lb.addEventListener("click", e => { if (e.target === lb) closeLb(); });
+
+  // ---------------------------------------------------------------- start
+  function fromHash() {
+    const m = /^#s(\d+)$/.exec(location.hash || "");
+    return m ? parseInt(m[1], 10) - 1 : 0;
+  }
+  window.addEventListener("hashchange", () => go(fromHash(), true));
+  go(fromHash(), true);
+  showTime(0);
+})();
+</script>
+
+</body>
+</html>
